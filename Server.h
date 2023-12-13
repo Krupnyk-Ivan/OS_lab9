@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <thread>
 #include <vector>
+#include <QString>
 
 #pragma comment(lib, "ws2_32.lib")
 
