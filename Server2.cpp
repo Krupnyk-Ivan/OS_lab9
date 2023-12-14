@@ -99,6 +99,7 @@ void Server::start() {
     }
 }
 //some comment sd
+//comment to hide title mutex smth
 void Server::stop() {
     closesocket(serverSocket);
     WSACleanup();
