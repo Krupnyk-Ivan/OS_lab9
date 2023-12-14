@@ -1,4 +1,7 @@
 #include "Server.h"
+#include "Windows.h"
+
+HANDLE hFile = CreateFileA("output.txt", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
 Server::Server() {
     WSADATA wsaData;
@@ -32,6 +35,17 @@ Server::Server() {
         exit(EXIT_FAILURE);
     }
     std::cout << "Server is listening on port " << DEFAULT_PORT << "...\n";
+    char buf[256];
+    sprintf_s(buf, sizeof(buf), "Server is listening on port %d...\n", DEFAULT_PORT);
+
+    // Write the formatted string to the file
+    DWORD bytesWritten;
+    if (!WriteFile(hFile, buf, strlen(buf), &bytesWritten, NULL))
+    {
+        std::cerr << "Error writing to file. Error code: " << GetLastError() << std::endl;
+        CloseHandle(hFile);
+        exit(1);
+    }
 }
 
 Server::~Server() {
@@ -51,6 +65,17 @@ void Server::start() {
         }
 
         std::cout << "Client connected.\n";
+        char buf[256];
+        sprintf_s(buf, sizeof(buf), "Client connected.\n");
+
+        // Write the formatted string to the file
+        DWORD bytesWritten;
+        if (!WriteFile(hFile, buf, strlen(buf), &bytesWritten, NULL))
+        {
+            std::cerr << "Error writing to file. Error code: " << GetLastError() << std::endl;
+            CloseHandle(hFile);
+            exit(1);
+        }
 
         std::thread clientThread(&Server::clientHandler, this, clientSocket);
         clientThread.detach();
@@ -62,7 +87,7 @@ void Server::start() {
         }
     }
 }
-
+//some comment sd
 void Server::stop() {
     closesocket(serverSocket);
     WSACleanup();
@@ -74,11 +99,34 @@ void Server::clientHandler(SOCKET clientSocket) {
         int bytesReceived = recv(clientSocket, buffer, BUFFER_SIZE, 0);
         if (bytesReceived == SOCKET_ERROR || bytesReceived == 0) {
             std::cout << "Client disconnected.\n";
+            char buf[256];
+            sprintf_s(buf, sizeof(buf), "Client disconnected.\n");
+
+            // Write the formatted string to the file
+            DWORD bytesWritten;
+            if (!WriteFile(hFile, buf, strlen(buf), &bytesWritten, NULL))
+            {
+                std::cerr << "Error writing to file. Error code: " << GetLastError() << std::endl;
+                CloseHandle(hFile);
+                exit(1);
+            }
             break;
         }
 
         buffer[bytesReceived] = '\0';
+
         std::cout << "Received: " << buffer << std::endl;
+        char buf[256];
+        sprintf_s(buf, sizeof(buf), "Received: %s\n", buffer);
+
+        // Write the formatted string to the file
+        DWORD bytesWritten;
+        if (!WriteFile(hFile, buf, strlen(buf), &bytesWritten, NULL))
+        {
+            std::cerr << "Error writing to file. Error code: " << GetLastError() << std::endl;
+            CloseHandle(hFile);
+            exit(1);
+        }
     }
     closesocket(clientSocket);
 }
