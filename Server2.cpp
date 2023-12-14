@@ -98,7 +98,7 @@ void Server::start() {
         }
     }
 }
-
+//some comment sd
 void Server::stop() {
     closesocket(serverSocket);
     WSACleanup();
