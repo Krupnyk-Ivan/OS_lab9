@@ -2,6 +2,7 @@
 #include "Windows.h"
 
 HANDLE hFile = CreateFileA("output.txt", GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+HANDLE clientThreadsMutex;
 
 Server::Server() {
     WSADATA wsaData;
@@ -9,7 +10,13 @@ Server::Server() {
         std::cerr << "WSAStartup failed.\n";
         exit(EXIT_FAILURE);
     }
-
+    clientThreadsMutex = CreateMutex(NULL, FALSE, NULL);
+    if (clientThreadsMutex == NULL) {
+        std::cerr << "Mutex creation failed.\n";
+        closesocket(serverSocket);
+        WSACleanup();
+        exit(EXIT_FAILURE);
+    }
     if ((serverSocket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
         std::cerr << "Socket creation failed.\n";
         WSACleanup();
@@ -49,6 +56,8 @@ Server::Server() {
 }
 
 Server::~Server() {
+    CloseHandle(clientThreadsMutex);
+
     closesocket(serverSocket);
     WSACleanup();
 }
@@ -76,8 +85,9 @@ void Server::start() {
             CloseHandle(hFile);
             exit(1);
         }
-
+        WaitForSingleObject(clientThreadsMutex, INFINITE);
         std::thread clientThread(&Server::clientHandler, this, clientSocket);
+        ReleaseMutex(clientThreadsMutex);
         clientThread.detach();
         clientThreads.push_back(std::move(clientThread));
 
@@ -128,5 +138,7 @@ void Server::clientHandler(SOCKET clientSocket) {
             exit(1);
         }
     }
+    WaitForSingleObject(clientThreadsMutex, INFINITE);
     closesocket(clientSocket);
+    ReleaseMutex(clientThreadsMutex);
 }
